@@ -6,8 +6,18 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+.app {
+  padding: 20px;
+}
+.node-success {
+  fill: green
+}
+.node-fail {
+  fill: red
+}
+.node-running {
+  fill: #1E9FFF
+}
+.node-norun {
+  fill: #333
 }
