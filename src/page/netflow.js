@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import * as d3 from 'd3'
 import dagreD3 from 'dagre-d3'
 import ToolTip from './utils/tooltip.js'
-import { getNodeById } from './utils/utils.js'
-import { Row, Button, Space, notification } from 'antd'
-import { PlusCircleOutlined, DeleteOutlined, FormOutlined } from '@ant-design/icons';
+import Dialog from './dialog.js'
+import { getNodeById, getParentIdByEdges } from './utils/utils.js'
+import { Form, Button, Space, message, Modal, Input } from 'antd'
+import { PlusCircleOutlined, DeleteOutlined, FormOutlined, MenuFoldOutlined } from '@ant-design/icons';
 
 
 let data = {
@@ -28,17 +29,18 @@ let data = {
 
 const NetFlow = ({ onNodeClick }) => {
     const [dataset, setDataset] = useState(data)
-    const g = new dagreD3.graphlib.Graph()
-        .setGraph({ rankdir: 'TB' })
+    const selectNode = useRef(null)
+    const [direction, setDirection] = useState('TB')
+    const [dialogData, setDialogData] = useState({visible: false, option: 'add', data: {}})
+    let option = useRef('add')
 
 
-    let selectNode
     useEffect(() => {
         renderGraph()
-    }, [dataset])
+    }, [dataset, direction])
 
     // 创建节点
-    const createNodes = (nodes) => {
+    const createNodes = (nodes, g) => {
         nodes.forEach(item => {
             item && g.setNode(item.id, {
                 label: item.label,
@@ -50,10 +52,11 @@ const NetFlow = ({ onNodeClick }) => {
     }
 
     // 创建连线
-    const createEdges = (edges) => {
+    const createEdges = (edges, g) => {
         edges.forEach((item) => {
             g.setEdge(item.source, item.target, {
                 label: item.label,
+                labelStyle: 'fill:#C16E12',
                 style: 'fill: #fff; stroke: #333;'
             })
         })
@@ -64,9 +67,10 @@ const NetFlow = ({ onNodeClick }) => {
     const renderGraph = () => {
         const svgGroup = d3.select('#netContainer')
         const innerGroup = d3.select('#gContainer')
+        const g = new dagreD3.graphlib.Graph().setGraph({ rankdir: direction })
 
-        createNodes(dataset.nodes)
-        createEdges(dataset.edges)
+        createNodes(dataset.nodes, g)
+        createEdges(dataset.edges, g)
         // 缩放
         const zoom = d3.zoom().on("zoom", function () {
             innerGroup.attr('transform', d3.event.transform)
@@ -83,26 +87,28 @@ const NetFlow = ({ onNodeClick }) => {
                 const currentNode = getNodeById(dataset.nodes, v)[0]
                 d3.select('.selected-node').classed('selected-node', false)
                 d3.select(node.elem).classed('selected-node', true)
-                selectNode = {...currentNode,target: currentNode.id}
+                const tempNode = { ...currentNode }
 
                 // 获取父级元素
                 let parentNode = []
                 dataset.edges.forEach(item => {
                     if (item.target == currentNode.id) {
-                        selectNode.source = item.source
+                        tempNode.source = item.source
                         parentNode.push(...getNodeById(dataset.nodes, item.source))
                     }
                 })
-                console.log(111, selectNode)
+
+                selectNode.current = tempNode
+                console.log('select', selectNode.current)
                 onNodeClick({ currentNode, parentNode })
 
             })
             .on("mouseover", function (v) {
                 const nodeData = getNodeById(dataset.nodes, v)[0]
                 // console.log(nodeData)
-                const { label = '', desc = '' } = nodeData
+                const { label = '', desc = '',id } = nodeData
                 //tooltip显示
-                ToolTip.show(`名称：${label}</br>描述：${desc}`)
+                ToolTip.show(`编号：${id}<br/>名称：${label}</br>描述：${desc}`)
             })
             .on("mouseout", function (v) {
                 //tooltip隐藏
@@ -117,43 +123,76 @@ const NetFlow = ({ onNodeClick }) => {
 
     }
     const addNode = () => {
-
+        showModal('add')
     }
     const editNode = () => {
-
+        if (!selectNode.current) {
+            message.warning('请选择节点')
+            return
+        }
+        showModal('edit')
     }
     const deleteNode = () => {
-        if(!selectNode) {
-            notification.info('请选择节点')
+        if (!selectNode.current) {
+            message.warning('请选择节点')
             return
         }
 
-        const {id, label, target, source} = selectNode
-        const {nodes, edges} = dataset
+        const { id, label, source } = selectNode.current
+        const { nodes, edges } = dataset
         // 删除节点
-        for(let i= nodes.length -1; i>= 0; i--) {
-            if(nodes[i].id === id) {
+        for (let i = nodes.length - 1; i >= 0; i--) {
+            if (nodes[i].id === id) {
                 nodes.splice(i, 1)
             }
         }
 
         // 删除连线
-        for(let i=edges.length -1; i>=0; i--) {
-            if(edges[i].target === target || edges[i].source === source) {
-                edges.splice(i,1)
+        for (let i = edges.length - 1; i >= 0; i--) {
+            if (edges[i].target === id || edges[i].source === id) {
+                edges.splice(i, 1)
             }
         }
         console.log('delete', dataset)
-        setDataset({nodes,edges})
+        setDataset({ nodes, edges })
     }
+
+    // 切换
+    const toggleDirection = () => {
+        setDirection(direction === 'LR' ? 'TB' :'LR')
+    }
+
+    const showModal = (op) => {
+        const data = op === 'edit' ? selectNode.current : {}
+        setDialogData({visible: true, option: op, data })
+    }
+
+    // 点击确定
+    const handleData = (formdata) => {
+        const {id, label, source, desc} = formdata
+        let {nodes, edges} = dataset
+        if(option.current === 'edit') {
+            // 编辑
+            nodes = nodes.map(item => item.id == id? ({...item, desc, label}) : item)
+            onNodeClick({currentNode: getNodeById(nodes, id)[0]})
+        } else {
+            // 新增
+            nodes.push({id, label,desc, status:'norun', shape: 'rect', })
+            edges.push({target:id, source, label: ''})
+        }
+        setDataset({nodes, edges})
+    }
+
     return (
         <>
             <Space>
                 <Button type="primary" size="large" icon={<PlusCircleOutlined />} onClick={addNode}>添加</Button>
                 <Button size="large" icon={<FormOutlined />} onClick={editNode}>修改</Button>
                 <Button type="primary" size="large" danger="true" icon={<DeleteOutlined />} onClick={deleteNode}>删除</Button>
+                <Button type="primary" size="large" icon={<MenuFoldOutlined />} onClick={toggleDirection}>切换</Button>
             </Space>
             <svg id='netContainer' width='100%' height='800'><g id="gContainer"></g></svg>
+            <Dialog {...dialogData} onSendData= {handleData} onCancel = {(visible) => setDialogData({visible})}/>
         </>
     )
 }
