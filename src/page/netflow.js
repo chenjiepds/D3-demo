@@ -163,18 +163,22 @@ const NetFlow = ({ onNodeClick }) => {
     }
 
     const showModal = (op) => {
+        option.current = op
         const data = op === 'edit' ? selectNode.current : {}
         setDialogData({visible: true, option: op, data })
     }
 
     // 点击确定
     const handleData = (formdata) => {
+        console.log('formdata',formdata)
         const {id, label, source, desc} = formdata
         let {nodes, edges} = dataset
         if(option.current === 'edit') {
             // 编辑
-            nodes = nodes.map(item => item.id == id? ({...item, desc, label}) : item)
-            onNodeClick({currentNode: getNodeById(nodes, id)[0]})
+             nodes = nodes.map(item => item.id == id? ({...item, desc, label}) : item)
+            const parentIds = getParentIdByEdges(edges, id)
+            const parentNode = nodes.filter(item => parentIds.includes(item.id))
+            onNodeClick({currentNode: getNodeById(nodes, id)[0], parentNode})
         } else {
             // 新增
             nodes.push({id, label,desc, status:'norun', shape: 'rect', })

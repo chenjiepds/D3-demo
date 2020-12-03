@@ -6,15 +6,15 @@ import '../index.css';
 
 function App () {
     const [node, setNode] = useState({})
-    const nodeClick = useCallback((data) => {
-        console.log(data)
-        setNode(data)
-    },[])
+    // const nodeClick = useCallback((data) => {
+    //     console.log('data',data)
+    //     setNode(data)
+    // },[])
     return (
         <div className="app">
             <Row>
                 <Col span={16}>
-                    <NetFlow onNodeClick={nodeClick} />
+                    <NetFlow onNodeClick={(data)=> {setNode(data)}} />
                 </Col>
                 <Col span={8} className="right-container"><Detail {...node} /></Col>
             </Row>

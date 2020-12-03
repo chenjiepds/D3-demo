@@ -1,8 +1,8 @@
 import React from 'react'
 import { Row } from 'antd';
 const Detail = ({ currentNode = {}, parentNode = [] }) => {
-    console.log(currentNode, parentNode)
-    const { label = '', desc = '' } = currentNode
+    console.log(333,currentNode, parentNode)
+    const { label, desc } = currentNode
     const parentNodeName = parentNode.map(item => item.label).join(',')
     return (
         <>

@@ -36,7 +36,7 @@ const Dialog = ({option, visible, data, onSendData, onCancel}) =>{
                 <Input placeholder="请输入节点Id" disabled={option === 'edit' ? true : false} />
             </Form.Item>
             <Form.Item label="父节点" name="source">
-                <Input placeholder="请输入父节点id" disabled={Option === 'edit' ? true : false} />
+                <Input placeholder="请输入父节点id" disabled={option === 'edit' ? true : false} />
             </Form.Item>
             <Form.Item label="节点名称" name="label">
                 <Input placeholder="请输入节点名称" />
