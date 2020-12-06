@@ -27,12 +27,15 @@ let data = {
     ]
 }
 
+
 const NetFlow = ({ onNodeClick }) => {
     const [dataset, setDataset] = useState(data)
     const selectNode = useRef(null)
     const [direction, setDirection] = useState('TB')
-    const [dialogData, setDialogData] = useState({visible: false, option: 'add', data: {}})
+    const [dialogData, setDialogData] = useState({visible: false, option: 'add', data: {},parentNodeList: []})
     let option = useRef('add')
+
+    window.localStorage.setItem('data', JSON.stringify(data))
 
 
     useEffect(() => {
@@ -76,10 +79,10 @@ const NetFlow = ({ onNodeClick }) => {
             innerGroup.attr('transform', d3.event.transform)
         })
         svgGroup.call(zoom)
+        // onNodeClick({data: dataset.nodes })
 
         const render = new dagreD3.render()
         render(innerGroup, g)
-
         innerGroup.selectAll('g.node')
             .on('click', (v) => {
                 // 当前点击节点
@@ -100,7 +103,7 @@ const NetFlow = ({ onNodeClick }) => {
 
                 selectNode.current = tempNode
                 console.log('select', selectNode.current)
-                onNodeClick({ currentNode, parentNode })
+                onNodeClick({ currentNode, parentNode,data: dataset.nodes })
 
             })
             .on("mouseover", function (v) {
@@ -165,7 +168,8 @@ const NetFlow = ({ onNodeClick }) => {
     const showModal = (op) => {
         option.current = op
         const data = op === 'edit' ? selectNode.current : {}
-        setDialogData({visible: true, option: op, data })
+        console.log('edit', data)
+        setDialogData({visible: true, option: op, data,parentNodeList:  dataset.nodes})
     }
 
     // 点击确定
@@ -176,6 +180,11 @@ const NetFlow = ({ onNodeClick }) => {
         if(option.current === 'edit') {
             // 编辑
              nodes = nodes.map(item => item.id == id? ({...item, desc, label}) : item)
+             edges = edges.map(item => item.target === id ? ({...item, source}) :item)
+             if(!selectNode.current.source) {
+                 // 表示增加边数
+                 edges.push({target: id, source, label: ''})
+             }
             const parentIds = getParentIdByEdges(edges, id)
             const parentNode = nodes.filter(item => parentIds.includes(item.id))
             onNodeClick({currentNode: getNodeById(nodes, id)[0], parentNode})
@@ -184,6 +193,7 @@ const NetFlow = ({ onNodeClick }) => {
             nodes.push({id, label,desc, status:'norun', shape: 'rect', })
             edges.push({target:id, source, label: ''})
         }
+        console.log(nodes, edges)
         setDataset({nodes, edges})
     }
 

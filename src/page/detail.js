@@ -1,6 +1,6 @@
 import React from 'react'
-import { Row } from 'antd';
-const Detail = ({ currentNode = {}, parentNode = [] }) => {
+import { Row, List, Typography, Divider } from 'antd';
+const Detail = ({ currentNode = {}, parentNode = [],data }) => {
     console.log(333,currentNode, parentNode)
     const { label, desc } = currentNode
     const parentNodeName = parentNode.map(item => item.label).join(',')
@@ -12,6 +12,24 @@ const Detail = ({ currentNode = {}, parentNode = [] }) => {
             <Row><span>父节点：</span><span>{parentNodeName}</span></Row>
         </>
     )
+
+    // return (
+    //     <>
+    //     <Divider orientation="left">Default Size</Divider>
+    //     <List
+    //       bordered
+    //       dataSource={data}
+    //       renderItem={item => (
+    //         <List.Item>
+    //     <List.Item.Meta
+    //       title={item.label}
+    //       description={item.desc}
+    //     />
+    //   </List.Item>
+    //       )}
+    //     />
+    //     </>
+    // )
 }
 
 export default Detail
